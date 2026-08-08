@@ -20,10 +20,16 @@ class MemberController extends Controller
     {
         $workspaceId = $request->attributes->get('workspace_id');
 
+        // Sorted in PHP rather than SQL's FIELD() (a MySQL-only function
+        // with no direct Postgres equivalent) so this works identically
+        // on MySQL and Postgres without database-specific raw SQL.
+        $roleOrder = ['owner' => 0, 'admin' => 1, 'member' => 2, 'viewer' => 3];
+
         $members = WorkspaceMember::where('workspace_id', $workspaceId)
             ->with('user')
-            ->orderByRaw("FIELD(role, 'owner', 'admin', 'member', 'viewer')")
-            ->get();
+            ->get()
+            ->sortBy(fn ($m) => $roleOrder[$m->role] ?? 99)
+            ->values();
 
         return response()->json([
             'data' => WorkspaceMemberResource::collection($members),
@@ -87,11 +93,6 @@ class MemberController extends Controller
 
     /**
      * POST /api/v1/workspace/members/{member}/accept
-     * Self-service -- the invited person accepts their OWN pending
-     * invitation. Not gated by ensure.admin (they're not a member yet,
-     * so they'd never pass that check) or ensure.workspace.member (they
-     * may not have an active workspace context for this workspace at
-     * all until they accept). Ownership is verified directly instead.
      */
     public function accept(Request $request, WorkspaceMember $member)
     {
@@ -120,8 +121,6 @@ class MemberController extends Controller
 
     /**
      * POST /api/v1/workspace/members/{member}/decline
-     * Self-service -- the invited person declines, removing the pending
-     * membership row entirely (as if they were never invited).
      */
     public function decline(Request $request, WorkspaceMember $member)
     {
@@ -147,9 +146,6 @@ class MemberController extends Controller
     /**
      * PATCH /api/v1/workspace/members/{member}
      * Requires ensure.admin. Cannot modify the workspace owner.
-     * (Admins can still force-activate/suspend/change role for
-     * already-accepted members -- this is separate from the person's own
-     * accept/decline action above.)
      */
     public function update(UpdateMemberRequest $request, WorkspaceMember $member)
     {
