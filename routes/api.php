@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\V1\AiController;
 use App\Http\Controllers\Api\V1\AuthController;
 use App\Http\Controllers\Api\V1\CalendarEventController;
+use App\Http\Controllers\Api\V1\DashboardController;
 use App\Http\Controllers\Api\V1\MemberController;
 use App\Http\Controllers\Api\V1\NoteController;
 use App\Http\Controllers\Api\V1\TaskController;
@@ -38,6 +39,7 @@ Route::prefix('v1')->group(function () {
 
             Route::get('workspace', [WorkspaceController::class, 'show']);
             Route::get('workspace/members', [MemberController::class, 'index']);
+            Route::get('dashboard/summary', [DashboardController::class, 'summary']);
 
             Route::prefix('ai')->group(function () {
                 Route::post('tasks/suggest', [AiController::class, 'suggestTask']);
