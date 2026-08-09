@@ -60,7 +60,8 @@ class AiService
     public function suggestTask(string $prompt, array $existingCategories = []): array
     {
         $categoriesJson = json_encode($existingCategories);
-        $systemPrompt = "You are an AI task assistant. Given a rough task description, respond with ONLY a single JSON object (no markdown, no array, no extra text) with these exact keys: "
+        $today = now()->format('Y-m-d, l');
+        $systemPrompt = "You are an AI task assistant. Today's date is {$today}. When the prompt implies a relative day (e.g. 'tomorrow', 'friday', 'next week'), compute due_date_suggestion as an actual future date after today in YYYY-MM-DD format -- never reuse a date from your training data. Given a rough task description, respond with ONLY a single JSON object (no markdown, no array, no extra text) with these exact keys: "
             . "title (string, a clear concise task title), "
             . "category_suggestion (string matching one of the available category names if relevant, otherwise null), "
             . "priority (one of: low, medium, high, urgent), "
