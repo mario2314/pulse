@@ -55,18 +55,36 @@ class AiService
     }
 
     /**
-     * Suggest Task (Generates tasks based on prompt)
+     * Suggest Task (Generates a single structured task suggestion based on prompt)
      */
     public function suggestTask(string $prompt, array $existingCategories = []): array
     {
         $categoriesJson = json_encode($existingCategories);
-        $systemPrompt = "You are an AI task assistant. Based on the prompt, suggest tasks. Output MUST be valid JSON with key 'suggestion'. Available categories: {$categoriesJson}";
-        
+        $systemPrompt = "You are an AI task assistant. Given a rough task description, respond with ONLY a single JSON object (no markdown, no array, no extra text) with these exact keys: "
+            . "title (string, a clear concise task title), "
+            . "category_suggestion (string matching one of the available category names if relevant, otherwise null), "
+            . "priority (one of: low, medium, high, urgent), "
+            . "due_date_suggestion (a date in YYYY-MM-DD format if a deadline is implied, otherwise null), "
+            . "subtasks (an array of 2-5 short actionable subtask strings). "
+            . "Available categories: {$categoriesJson}";
+
         $result = $this->askGroq($systemPrompt, $prompt);
+        $decoded = json_decode($result['content'], true);
+
+        $priority = strtolower((string) ($decoded['priority'] ?? 'medium'));
+        if (! in_array($priority, ['low', 'medium', 'high', 'urgent'], true)) {
+            $priority = 'medium';
+        }
 
         return [
-            'suggestion' => $result['content'],
-            'tokens_used' => $result['tokens_used']
+            'suggestion' => [
+                'title' => $decoded['title'] ?? $prompt,
+                'category_suggestion' => $decoded['category_suggestion'] ?? null,
+                'priority' => $priority,
+                'due_date_suggestion' => $decoded['due_date_suggestion'] ?? null,
+                'subtasks' => is_array($decoded['subtasks'] ?? null) ? array_values($decoded['subtasks']) : [],
+            ],
+            'tokens_used' => $result['tokens_used'],
         ];
     }
 
