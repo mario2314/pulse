@@ -3,6 +3,7 @@ return [
     'paths' => ['api/*', 'sanctum/csrf-cookie'],
     'allowed_methods' => ['*'],
     'allowed_origins' => [
+        'https://pulse-frontend-pi.vercel.app',
         'https://pulse-frontend.vercel.app',
         'http://localhost:3000',
     ],
